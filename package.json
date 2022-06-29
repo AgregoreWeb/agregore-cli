@@ -1,0 +1,39 @@
+{
+  "name": "agregore",
+  "version": "0.0.0",
+  "description": "Run p2p web scripts from the CLI, no browser required.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules ./test.js",
+    "lint": "standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgregoreWeb/agregore-cli.git"
+  },
+  "keywords": [
+    "agregore",
+    "p2p",
+    "web",
+    "cli",
+    "dweb"
+  ],
+  "author": "rangermauve <ranger@mauve.moe> (https://mauve.moe/)",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/AgregoreWeb/agregore-cli/issues"
+  },
+  "homepage": "https://github.com/AgregoreWeb/agregore-cli#readme",
+  "devDependencies": {
+    "standard": "^17.0.0"
+  },
+  "dependencies": {
+    "go-ipfs": "^0.13.0",
+    "hypercore-fetch": "^8.6.0",
+    "ipfs-core": "^0.15.4",
+    "ipfs-http-client": "^57.0.3",
+    "ipfsd-ctl": "^12.0.0",
+    "js-ipfs-fetch": "^4.0.0"
+  }
+}
