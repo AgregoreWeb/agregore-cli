@@ -4,6 +4,26 @@ Run  p2p web scripts from the CLI, no browser required.
 
 **Work in progress!**
 
+## CLI
+
+``
+npx agregore --help
+
+agregore run <script> [...opts]
+agregore eval "Some code" [...opts]
+
+--no-https: Disable loading scripts from HTTPS
+--no-http:  Disable loading scripts from HTTP
+--no-ipfs: Disable loading scripts from IPFS
+--no-hyper: Disable loading scripts from hypercore-protocol
+--root: The root folder to persist data to (defaults to current folder)
+--help: Show this text
+```
+
+```
+npx agregore run hyper://blog.mauve.moe/example.js
+```
+
 ## TODO:
 
 - Use vm module to set up environment

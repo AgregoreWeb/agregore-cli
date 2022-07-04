@@ -8,6 +8,10 @@
     "test": "node --experimental-vm-modules ./test.js",
     "lint": "standard --fix"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": "bin.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AgregoreWeb/agregore-cli.git"

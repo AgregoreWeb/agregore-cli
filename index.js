@@ -90,6 +90,8 @@ export default class Agregore {
   moduleLoaders = new Map()
   protocols = new ProtocolRegistry()
   globals = new GlobalRegistry()
+  onbeforeunload = []
+  closed = false
 
   constructor ({
     root = DEFAULT_ROOT,
@@ -113,6 +115,9 @@ export default class Agregore {
       this.protocols.registerLazy('hyper:', async () => {
         const { default: makeHyper } = await import('hypercore-fetch')
         const fetch = await makeHyper(hyper)
+
+        this.addBeforeUnload(() => fetch.close())
+
         return fetch
       })
     }
@@ -123,6 +128,9 @@ export default class Agregore {
         const { default: makeIPFSFetch } = await import('js-ipfs-fetch')
         const node = await IPFS.create(ipfs)
         const fetch = await makeIPFSFetch({ ipfs: node })
+
+        this.addBeforeUnload(() => node.stop())
+
         return fetch
       })
       this.protocols.alias('ipfs', 'ipns')
@@ -131,9 +139,13 @@ export default class Agregore {
     }
 
     this.globals.register('fetch', (...args) => this.protocols.fetch(...args))
+    this.globals.register('close', () => this.close())
   }
 
   #initCheck () {
+    if (this.closed) {
+      throw new Error('Cannot invoke code, Agregore has already been uninitialized with close()')
+    }
     if (!this.context) {
       throw new Error('Agregore was not initialized, use await agregore.init() before doing any evaluation')
     }
@@ -146,6 +158,18 @@ export default class Agregore {
   async init () {
     // This is where we can register any async-loaded globals?
     this.context = this.globals.createContext()
+  }
+
+  addBeforeUnload (fn) {
+    this.onbeforeunload.unshift(fn)
+  }
+
+  async close () {
+    if (this.closed) return
+    this.closed = true
+    for (const fn of this.onbeforeunload) {
+      await fn()
+    }
   }
 
   fetch (urlOrRequest, init = {}) {
