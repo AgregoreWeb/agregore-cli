@@ -24,6 +24,12 @@ agregore eval "Some code" [...opts]
 npx agregore run hyper://blog.mauve.moe/example.js
 ```
 
+### Currently missing before being "stable":
+
+- `file://` support
+- Persistence
+- More APIs?
+
 ## TODO:
 
 - Use vm module to set up environment

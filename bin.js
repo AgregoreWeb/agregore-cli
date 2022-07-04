@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --experimental-vm-modules
+#!/usr/bin/env -S node --no-warnings --experimental-vm-modules
 import { parseArgs } from 'node:util'
 import Agregore from './index.js'
 
@@ -11,6 +11,7 @@ agregore eval "Some code" [...opts]
 --no-ipfs: Disable loading scripts from IPFS
 --no-hyper: Disable loading scripts from hypercore-protocol
 --root: The root folder to persist data to (defaults to current folder)
+--autoclose: Used with 'run' to automatically close after the module gets evaluated
 --help: Show this text
 `
 
@@ -20,6 +21,10 @@ const args = parseArgs({
       type: 'boolean',
       short: 'h'
     },
+    autoclose: {
+      type: 'boolean',
+      short: 'a'
+    },
     'no-http': { type: 'boolean' },
     'no-https': { type: 'boolean' },
     'no-ipfs': { type: 'boolean' },
@@ -28,6 +33,8 @@ const args = parseArgs({
   strict: true,
   allowPositionals: true
 })
+
+console.log(args)
 
 const firstCommand = args.positionals[0]
 
@@ -65,6 +72,12 @@ async function doRun () {
   const agregore = await init()
 
   await agregore.import(script)
+
+  if (args.values.autoclose) {
+    console.log('Closing')
+    await agregore.close()
+    console.log('Done!')
+  }
 }
 
 async function doEval () {
