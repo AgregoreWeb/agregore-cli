@@ -34,7 +34,7 @@ const args = parseArgs({
   allowPositionals: true
 })
 
-console.log(args)
+// console.log(args)
 
 const firstCommand = args.positionals[0]
 
@@ -74,9 +74,7 @@ async function doRun () {
   await agregore.import(script)
 
   if (args.values.autoclose) {
-    console.log('Closing')
     await agregore.close()
-    console.log('Done!')
   }
 }
 
