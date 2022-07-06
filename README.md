@@ -6,7 +6,7 @@ Run  p2p web scripts from the CLI, no browser required.
 
 ## CLI
 
-``
+```
 npx agregore --help
 
 agregore run <script> [...opts]
