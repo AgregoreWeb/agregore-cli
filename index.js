@@ -1,6 +1,7 @@
 import vm from 'node:vm'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
+import createEventSource from '@rangermauve/fetch-event-source'
 
 // TODO: Add more APIs (like localStorage)
 import { GLOBAL_LIST } from './globals.js'
@@ -69,8 +70,14 @@ export class GlobalRegistry {
 
   // TODO: Can we figure out lazy loading?
   register (name, value) {
-    if (this.globals.has(name)) throw new Error(`Global already registered: ${name}`)
-    this.globals.set(name, value)
+    if (typeof name === 'object') {
+      for (const entry of Object.entries(name)) {
+        this.register(...entry)
+      }
+    } else {
+      if (this.globals.has(name)) throw new Error(`Global already registered: ${name}`)
+      this.globals.set(name, value)
+    }
   }
 
   createContext () {
@@ -138,8 +145,24 @@ export default class Agregore {
       this.protocols.alias('ipfs', 'pubsub')
     }
 
-    this.globals.register('fetch', (...args) => this.protocols.fetch(...args))
+    const fetch = (...args) => this.fetch(...args)
+
+    this.globals.register('fetch', fetch)
     this.globals.register('close', () => this.close())
+
+    const {
+      EventSource,
+      ErrorEvent,
+      CloseEvent,
+      OpenEvent
+    } = createEventSource(fetch)
+
+    this.globals.register({
+      EventSource,
+      ErrorEvent,
+      CloseEvent,
+      OpenEvent
+    })
   }
 
   #initCheck () {
