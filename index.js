@@ -1,6 +1,6 @@
 import vm from 'node:vm'
-import { pathToFileURL } from 'node:url'
-import { join } from 'node:path'
+import { pathToFileURL, fileURLToPath } from 'node:url'
+import { join, sep } from 'node:path'
 import createEventSource from '@rangermauve/fetch-event-source'
 
 // TODO: Add more APIs (like localStorage)
@@ -104,11 +104,35 @@ export default class Agregore {
     root = DEFAULT_ROOT,
     https = true,
     http = true,
-    hyper = { persist: false },
+    hyper = { storage: false },
     ipfs = {
       silent: true,
-      repo: join(root, '.ipfs')
-    }
+      repo: join(fileURLToPath(root), '.ipfs'),
+      preload: {
+        enabled: false
+      },
+      config: {
+        Ipns: {
+          UsePubsub: true
+        },
+        Pubsub: {
+          Enabled: true
+        },
+        Addresses: {
+          API: '/ip4/127.0.0.1/tcp/2473',
+          Gateway: '/ip4/127.0.0.1/tcp/2474',
+          Swarm: [
+          // '/ip4/0.0.0.0/tcp/2475',
+          // '/ip6/::/tcp/2475',
+            '/ip4/0.0.0.0/udp/2475/quic',
+            '/ip6/::/udp/2475/quic'
+          ]
+        },
+        // We don't need a gateway running. 🤷
+        Gateway: null
+      }
+    },
+    gemini = {}
   } = {}) {
     this.root = root
 
@@ -118,31 +142,71 @@ export default class Agregore {
     if (https) {
       this.protocols.register('https:', globalThis.fetch)
     }
+    if (gemini) {
+      this.protocols.registerLazy('gemini:', async () => {
+        const { default: makeFetch } = await import('gemini-fetch')
+        const fetch = await makeFetch(gemini)
+        return fetch
+      })
+    }
     if (hyper) {
       this.protocols.registerLazy('hyper:', async () => {
         const { default: makeHyper } = await import('hypercore-fetch')
-        const fetch = await makeHyper(hyper)
+        const SDK = await import('hyper-sdk')
+        const sdk = await SDK.create(hyper)
+        const fetch = await makeHyper({
+          sdk,
+          writable: true
+        })
 
-        this.addBeforeUnload(() => fetch.close())
+        this.addBeforeUnload(() => sdk.close())
 
         return fetch
       })
     }
 
     if (ipfs) {
-      this.protocols.registerLazy('ipfs', async () => {
-        const { default: IPFS } = await import('ipfs-core')
-        const { default: makeIPFSFetch } = await import('js-ipfs-fetch')
-        const node = await IPFS.create(ipfs)
-        const fetch = await makeIPFSFetch({ ipfs: node })
+      this.protocols.registerLazy('ipfs:', async () => {
+        const { default: makeFetch } = await import('js-ipfs-fetch')
+        const ipfsHttpModule = await import('ipfs-http-client')
 
-        this.addBeforeUnload(() => node.stop())
+        const Ctl = await import('ipfsd-ctl')
+
+        const { default: GoIPFS } = await import('go-ipfs')
+
+        const ipfsBin = GoIPFS
+          .path()
+          .replace(`.asar${sep}`, `.asar.unpacked${sep}`)
+
+        const ipfsdOpts = {
+          ipfsOptions: ipfs,
+          type: 'go',
+          disposable: false,
+          test: false,
+          remote: false,
+          ipfsHttpModule,
+          ipfsBin
+        }
+
+        const ipfsd = await Ctl.createController(ipfsdOpts)
+
+        await ipfsd.init({ ipfsOptions: ipfs })
+        await ipfsd.version()
+
+        await ipfsd.start()
+        await ipfsd.api.id()
+
+        const fetch = await makeFetch({
+          ipfs: ipfsd.api
+        })
+
+        this.addBeforeUnload(() => ipfsd.stop())
 
         return fetch
       })
-      this.protocols.alias('ipfs', 'ipns')
-      this.protocols.alias('ipfs', 'ipld')
-      this.protocols.alias('ipfs', 'pubsub')
+      this.protocols.alias('ipfs:', 'ipns:')
+      this.protocols.alias('ipfs:', 'ipld:')
+      this.protocols.alias('ipfs:', 'pubsub:')
     }
 
     const fetch = (...args) => this.fetch(...args)

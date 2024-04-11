@@ -38,5 +38,13 @@ await assert.doesNotReject(async () => {
   module.default()
 }, 'Able to import module from hyper://')
 
+await assert.doesNotReject(async () => {
+  const p2pURL = 'ipns://blog.mauve.moe/esm.js'
+
+  const module = await agregore.import(p2pURL)
+
+  module.default()
+}, 'Able to import module from ipns://')
+
 await agregore.close()
 console.log('Done!')

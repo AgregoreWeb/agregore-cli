@@ -1,4 +1,3 @@
-
 export const GLOBAL_LIST = [
   'AbortController',
   'Event',

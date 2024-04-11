@@ -28,7 +28,8 @@ const args = parseArgs({
     'no-http': { type: 'boolean' },
     'no-https': { type: 'boolean' },
     'no-ipfs': { type: 'boolean' },
-    'no-hyper': { type: 'boolean' }
+    'no-hyper': { type: 'boolean' },
+    'no-gemini': { type: 'boolean' }
   },
   strict: true,
   allowPositionals: true
@@ -54,6 +55,7 @@ async function init () {
   if (args.values['no-https']) opts.https = false
   if (args.values['no-ipfs']) opts.ipfs = false
   if (args.values['no-hyper']) opts.hyper = false
+  if (args.values['no-gemini']) opts.gemini = false
   if (args.values.root) opts.root = args.values.root
   const agregore = await new Agregore(opts)
 

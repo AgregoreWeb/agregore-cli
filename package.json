@@ -34,11 +34,12 @@
   },
   "dependencies": {
     "@rangermauve/fetch-event-source": "^1.0.1",
-    "go-ipfs": "^0.13.0",
-    "hypercore-fetch": "^8.6.0",
-    "ipfs-core": "^0.15.4",
-    "ipfs-http-client": "^57.0.3",
-    "ipfsd-ctl": "^12.0.0",
-    "js-ipfs-fetch": "^4.2.0"
+    "gemini-fetch": "^2.0.0",
+    "go-ipfs": "^0.17.0",
+    "hyper-sdk": "^5.0.0",
+    "hypercore-fetch": "^9.9.1",
+    "ipfs-http-client": "^60.0.1",
+    "ipfsd-ctl": "^13.0.0",
+    "js-ipfs-fetch": "^5.0.0"
   }
 }
