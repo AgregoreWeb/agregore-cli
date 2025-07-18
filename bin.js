@@ -6,6 +6,7 @@ import Agregore from './index.js'
 const HELP_TEXT = `
 agregore run <script> [...opts]
 agregore eval "Some code" [...opts]
+agregore repl [...opts]
 
 --no-https: Disable loading scripts from HTTPS
 --no-http:  Disable loading scripts from HTTP
@@ -35,8 +36,6 @@ const args = parseArgs({
   strict: true,
   allowPositionals: true
 })
-
-// console.log(args)
 
 const firstCommand = args.positionals[0]
 
@@ -112,11 +111,25 @@ async function doRun () {
 }
 
 async function doEval () {
-  const toEval = args.positionals[1]
+  let toEval = args.positionals[1]
+
+  if (!toEval) {
+    toEval = await collect(process.stdin)
+  }
 
   if (!toEval) {
     console.error('Must specify code to evaluate')
     return
+  }
+
+  // Wrap in async function
+  // Add return to last line
+  if (toEval.includes('await')) {
+    const lines = toEval.trim().split('\n')
+    const last = lines.at(-1)
+    lines[lines.length - 1] = `return ${last}`
+
+    toEval = `(async function eval(){${lines.join('\n')}})()`
   }
 
   const agregore = await init()
@@ -128,4 +141,15 @@ async function doEval () {
   }
 
   await agregore.close()
+}
+
+async function collect (stream) {
+  const chunks = []
+  for await (const chunk of stream) {
+    chunks.push(chunk)
+  }
+
+  const combined = Buffer.concat(chunks).toString('utf8')
+
+  return combined
 }
