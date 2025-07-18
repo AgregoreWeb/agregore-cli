@@ -21,7 +21,11 @@ agregore eval "Some code" [...opts]
 ```
 
 ```
-npx agregore run hyper://blog.mauve.moe/example.js
+npm i -g agregore
+agregore run hyper://blog.mauve.moe/example.js
+agregore eval '(await fetch("hyper://agregore.mauve.moe/index.md")).text()'
+echo "4+20" | agregore eval
+agregore repl
 ```
 
 ### Currently missing before being "stable":
