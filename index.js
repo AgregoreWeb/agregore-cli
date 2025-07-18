@@ -1,10 +1,13 @@
 import vm from 'node:vm'
-import { pathToFileURL, fileURLToPath } from 'node:url'
-import { join, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { sep } from 'node:path'
+
 import createEventSource from '@rangermauve/fetch-event-source'
 
 // TODO: Add more APIs (like localStorage)
 import { GLOBAL_LIST } from './globals.js'
+import { loadConfig } from './config.js'
+import { createLLM } from './llm.js'
 
 const DEFAULT_ROOT = pathToFileURL(process.cwd()).href
 
@@ -100,60 +103,38 @@ export default class Agregore {
   onbeforeunload = []
   closed = false
 
-  constructor ({
-    root = DEFAULT_ROOT,
-    https = true,
-    http = true,
-    hyper = { storage: false },
-    ipfs = {
-      silent: true,
-      repo: join(fileURLToPath(root), '.ipfs'),
-      preload: {
-        enabled: false
-      },
-      config: {
-        Ipns: {
-          UsePubsub: true
-        },
-        Pubsub: {
-          Enabled: true
-        },
-        Addresses: {
-          API: '/ip4/127.0.0.1/tcp/2473',
-          Gateway: '/ip4/127.0.0.1/tcp/2474',
-          Swarm: [
-          // '/ip4/0.0.0.0/tcp/2475',
-          // '/ip6/::/tcp/2475',
-            '/ip4/0.0.0.0/udp/2475/quic',
-            '/ip6/::/udp/2475/quic'
-          ]
-        },
-        // We don't need a gateway running. 🤷
-        Gateway: null
-      }
-    },
-    gemini = {}
-  } = {}) {
+  constructor (opts = {}) {
+    const config = loadConfig(opts)
+
+    const {
+      root = DEFAULT_ROOT,
+      httpOptions,
+      httpsOptions,
+      hyperOptions,
+      ipfsOptions,
+      geminiOptions
+    } = config
+
     this.root = root
 
-    if (http) {
+    if (httpOptions) {
       this.protocols.register('http:', globalThis.fetch)
     }
-    if (https) {
+    if (httpsOptions) {
       this.protocols.register('https:', globalThis.fetch)
     }
-    if (gemini) {
+    if (geminiOptions) {
       this.protocols.registerLazy('gemini:', async () => {
         const { default: makeFetch } = await import('gemini-fetch')
-        const fetch = await makeFetch(gemini)
+        const fetch = await makeFetch(geminiOptions)
         return fetch
       })
     }
-    if (hyper) {
+    if (hyperOptions) {
       this.protocols.registerLazy('hyper:', async () => {
         const { default: makeHyper } = await import('hypercore-fetch')
         const SDK = await import('hyper-sdk')
-        const sdk = await SDK.create(hyper)
+        const sdk = await SDK.create(hyperOptions)
         const fetch = await makeHyper({
           sdk,
           writable: true
@@ -165,7 +146,7 @@ export default class Agregore {
       })
     }
 
-    if (ipfs) {
+    if (ipfsOptions) {
       this.protocols.registerLazy('ipfs:', async () => {
         const { default: makeFetch } = await import('js-ipfs-fetch')
         const ipfsHttpModule = await import('ipfs-http-client')
@@ -179,7 +160,7 @@ export default class Agregore {
           .replace(`.asar${sep}`, `.asar.unpacked${sep}`)
 
         const ipfsdOpts = {
-          ipfsOptions: ipfs,
+          ipfsOptions,
           type: 'go',
           disposable: false,
           test: false,
@@ -190,7 +171,7 @@ export default class Agregore {
 
         const ipfsd = await Ctl.createController(ipfsdOpts)
 
-        await ipfsd.init({ ipfsOptions: ipfs })
+        await ipfsd.init({ ipfsOptions })
         await ipfsd.version()
 
         await ipfsd.start()
@@ -221,11 +202,14 @@ export default class Agregore {
       OpenEvent
     } = createEventSource(fetch)
 
+    const llm = createLLM(config, fetch)
+
     this.globals.register({
       EventSource,
       ErrorEvent,
       CloseEvent,
-      OpenEvent
+      OpenEvent,
+      llm
     })
   }
 

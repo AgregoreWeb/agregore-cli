@@ -1,5 +1,6 @@
 #!/usr/bin/env -S node --no-warnings --experimental-vm-modules
 import { parseArgs } from 'node:util'
+import repl, { REPLServer } from 'node:repl'
 import Agregore from './index.js'
 
 const HELP_TEXT = `
@@ -45,23 +46,53 @@ if (!firstCommand || args.values.help) {
   doRun()
 } else if (firstCommand === 'eval') {
   doEval()
+} else if (firstCommand === 'repl') {
+  doRepl()
 } else {
   console.log(`Unknown command: ${firstCommand}.\n\n${HELP_TEXT}`)
 }
 
 async function init () {
   const opts = {}
-  if (args.values['no-http']) opts.http = false
-  if (args.values['no-https']) opts.https = false
-  if (args.values['no-ipfs']) opts.ipfs = false
-  if (args.values['no-hyper']) opts.hyper = false
-  if (args.values['no-gemini']) opts.gemini = false
+  if (args.values['no-http']) opts.httpOptions = false
+  if (args.values['no-https']) opts.httpsOptions = false
+  if (args.values['no-ipfs']) opts.ipfsOptions = false
+  if (args.values['no-hyper']) opts.hyperOptions = false
+  if (args.values['no-gemini']) opts.geminiOptions = false
   if (args.values.root) opts.root = args.values.root
+
   const agregore = await new Agregore(opts)
 
   await agregore.init()
 
   return agregore
+}
+
+async function doRepl () {
+  const agregore = await init()
+
+  REPLServer.prototype.createContext = () => agregore.context
+
+  async function evalInContext (code, context, filename, callback) {
+    try {
+      const result = await agregore.eval(code)
+      callback(null, result)
+    } catch (e) {
+      if (isRecoverableError(e)) {
+        return callback(new repl.Recoverable(e))
+      }
+      return callback(e)
+    }
+  }
+
+  repl.start({ eval: evalInContext })
+}
+
+function isRecoverableError (error) {
+  if (error.name === 'SyntaxError') {
+    return /^(Unexpected end of input|Unexpected token)/.test(error.message)
+  }
+  return false
 }
 
 async function doRun () {
