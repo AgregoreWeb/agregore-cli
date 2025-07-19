@@ -1,6 +1,6 @@
 {
   "name": "agregore",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Run p2p web scripts from the CLI, no browser required.",
   "type": "module",
   "main": "index.js",
